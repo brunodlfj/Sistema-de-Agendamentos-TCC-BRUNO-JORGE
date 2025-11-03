@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Sarae IFFAR ug</title>
+    <!--Import Google Icon Font-->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <!--Import materialize.css-->
+    <link type="text/css" rel="stylesheet" href="css/materialize.min.css" media="screen,projection"/>
+    <!--Let browser know website is optimized for mobile-->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+
+    <style>
+        /* Ajusta o tamanho do logo */
+        .logo {
+            max-width: 150px; /* Ajuste o tamanho conforme necessário */
+            height: auto; /* Mantém a proporção do logo */
+        }
+
+        /* Estiliza o link ativo */
+        .active a {
+            font-weight: bold;
+            color: #00796b; 
+        }
+
+        /* Adiciona margem ao logo */
+        .brand-logo img {
+            display: block;
+            margin: 0 auto; /* Centraliza o logo */
+        }
+        .tem-vagas {
+            border-radius: 5px; 
+            padding: 4px 8px; 
+            background-color: #26a69a; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            margin-left: auto; 
+            line-height: 1.2; 
+        }
+        .nao-tem-vagas {
+            border-radius: 5px; 
+            padding: 4px 8px; 
+            background-color: #993c34; 
+            color: white; 
+            font-weight: bold; 
+            font-size: 0.9rem; 
+            margin-left: auto; 
+            line-height: 1.2; 
+        }
+        .collapsible-header {
+            display: flex;
+            align-items: center;
+        }
+        body {
+        display: flex;
+        min-height: 100vh;
+        flex-direction: column;
+        }
+        main {
+        flex: 1 0 auto;
+        }
+    </style>
+</head>
+
+<link rel="shortcut icon" type=/image/png href="img/iconejanela.png" />
+
+<body>
+    <?php 
+    session_start();
+    if (!isset($_SESSION['cpf'])) {
+        header('Location: index.php');
+        exit();
+    }
+    include_once "headeraluno.php"; 
+    ?>
+    <main>
+        
+        <div class="section white">
+    <div class="row container">
+    <h1> Home aluno</h1>
+      <h4 class="header">Agendamento</h4>
+      <p class="grey-text text-darken-3 lighten-3">Tá querendo almoçar? Então vê se marca almoço.</p>
+    </div>
+    <div class="row container">
+        <ul class="collapsible popout" data-collapsible="accordion">
+            <?php
+            include "conecta.php";
+            // Conecta à base e procura hoje + 4 dias ou os próximos 5 dias
+            $sql = "SELECT * FROM diacontemplado WHERE dia >= CURRENT_DATE ORDER BY dia ASC LIMIT 5";  
+            $resultado = mysqli_query($conexao, $sql);
+            // Para cada dia ele vai criar um acordeon
+            while ($linha = mysqli_fetch_array($resultado)) { 
+            $diadasemana = date('N', strtotime($linha['dia'])); //Pega o numero referente ao dia ?>
+            <li>
+                <div class="collapsible-header">
+                    <i class="material-icons">local_dining</i>
+                    <?php echo $linha['dia']; // Mostra o dia ?>
+                    <?php
+                    //ver o número de vagas disponíveis
+                    $sqlconta = "SELECT COUNT(idAgendamento) AS total FROM agendamento WHERE idContemplado = $linha[idContemplado]";
+                    $resultadoconta = mysqli_query($conexao, $sqlconta);
+                    $total = mysqli_fetch_array($resultadoconta);
+                    $total = (int) $linha['quantidade'] - (int) $total['total'];
+                    echo $total;
+                    // Se não tiver mais vagas, só carrega aviso disso.
+                    if ($total<=0) { ?>
+                    <div class="nao-tem-vagas">
+                        0 vagas disponíveis
+                    </div>
+                    </div>
+                <div class="collapsible-body"><p>
+                Não há mais vagas para almoço nesse dia. Acompanhe o site para verificar se alguém cancelou.
+                </p></div>
+                    <?php }
+                    else {  // Se tiver vagas, mostra quantas e carrega o formulário com atividades do dia?>
+                    <div class="tem-vagas">
+                        <?php echo $total; ?> vagas disponíveis
+                    </div>
+                    </div>
+                <div class="collapsible-body"><p>
+                <form action="cadastroagendamento.php" method="post">
+                <input type="hidden" name="idContemplado" value="<?php echo $linha['idContemplado']; ?>">
+                <input type="hidden" name="idAtividade" value="<?php echo $linha2['idAtividade']; ?>">
+                <input type="hidden" name="id" value="<?php echo $_SESSION['id']; ?>"> <!-- ID do usuário logado -->
+
+                    <?php
+                        //Para cada dia, vai verificar as atividades que há para aquele dia da semana pelo número
+                        //e criar a opção da atividade para escolher no formulário em radio
+                        $sql2 = "SELECT * FROM atividade WHERE diadasemana = $diadasemana";  
+                        $resultado2 = mysqli_query($conexao, $sql2);
+                        while ($linha2 = mysqli_fetch_array($resultado2)) { ?>
+                       <p><label><input class="with-gap" name="idAtividade" type="radio" id="<?php echo $linha2['idAtividade']; ?>" />
+                        <span><?php echo $linha2['nome']; ?></span></label></p>
+                    <?php }; // Termina os radio boxes ?>
+                    
+                    
+                    <p class="left-align"><button class="btn waves-effect waves-light" style="background-color: #006d38;" 
+                    type="submit" name="action"> Agendar<i class="material-icons right">send</i></button></p>
+            
+                
+                </form>
+                </p></div>
+                    <?php }; ?>
+               
+                </li>
+            <?php }; // Termina todos os acordeões (quinto se tiver) ?>
+        </ul>
+    </div>
+
+
+    </main>    
+    <!--JavaScript at end of body for optimized loading-->
+    <script type="text/javascript" src="js/materialize.min.js"></script>
+     <!--  Scripts-->
+     <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+    <script src="https://www.um.es/docencia/barzana/materializecss/bin/materialize.js"></script>
+</body>
+</html>
